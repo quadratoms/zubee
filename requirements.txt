@@ -17,3 +17,4 @@ tzdata==2022.1
 numpy
 rave-python
 gunicorn
+paystackapi
