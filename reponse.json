@@ -1,0 +1,63 @@
+[
+    {
+        "status": "success",
+        "message": "Virtual account created",
+        "data": {
+            "response_code": "02",
+            "response_message": "Transaction in progress",
+            "flw_ref": "OLZQ32961668489235983129",
+            "order_ref": "URF_1668489221686_5404335",
+            "account_number": "8515757749",
+            "frequency": "N/A",
+            "bank_name": "Sterling Bank",
+            "created_at": "2022-11-15 06:13:55",
+            "expiry_date": "2022-11-15 06:13:55",
+            "note": "Please make a bank transfer to narrations  FLW",
+            "amount": "500.00"
+        }
+    },
+    {
+        "status": "success",
+        "message": "Virtual account created",
+        "data": {
+            "response_code": "02",
+            "response_message": "Transaction in progress",
+            "flw_ref": "ARYG25041668493495496182",
+            "order_ref": "URF_1668493489558_316335",
+            "account_number": "8517073591",
+            "account_status": "ACTIVE",
+            "frequency": "N/A",
+            "bank_name": "Sterling BANK",
+            "created_at": "2022-11-15 07:24:55",
+            "expiry_date": "N/A",
+            "note": "Please make a bank transfer to narrations  FLW",
+            "amount": "NaN"
+        }
+    }
+]
+
+{
+    {
+        "status": "success",
+        "message": "Transfer Queued Successfully",
+        "data": {
+            "id": 37803414,
+            "account_number": "2085971163",
+            "bank_code": "033",
+            "full_name": "QUADRI, TOSIN MICHEAL",
+            "created_at": "2022-11-27T09:14:07.000Z",
+            "currency": "NGN",
+            "debit_currency": "NGN",
+            "amount": 100,
+            "fee": 10.75,
+            "status": "NEW",
+            "reference": "akhlm-pstmnpyt-rfxx007_PMCKDU_1",
+            "meta": null,
+            "narration": "Akhlm Pstmn Trnsfr xx007",
+            "complete_message": "",
+            "requires_approval": 0,
+            "is_approved": 1,
+            "bank_name": "UNITED BANK FOR AFRICA PLC"
+        }
+    }
+}

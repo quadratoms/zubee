@@ -1,0 +1,44 @@
+<style>
+    #can {
+        border: 10px solid black;
+        width: 400px;
+        height: 200px;
+    }
+
+    body {
+        margin: 30px;
+    }
+</style>
+<H1>
+    <center> Input and Display Board</center>
+    <p></p><br>
+</H1>
+<div style="overflow: scroll;" id="can">
+</div>
+<br>
+<h4>
+    <font size=5> Input:</font>
+</h4>
+
+<span id="p" >
+    <input  type="text" id="finput"> <input type="button" value="upload"
+        onclick="whetever()">
+</span>
+
+<script
+  src="https://code.jquery.com/jquery-3.6.1.slim.min.js"
+  integrity="sha256-w8CvhFs7iHNVUtnSP0YKEg00p9Ih13rlL9zGqvLdePA="
+  crossorigin="anonymous"></script>
+<script>
+    function whatever() {
+      
+      }
+      function promptuser(){
+        $("#p").attr('hidden',false)
+    }
+    function clearCancas(){
+        $("#can").html("")
+    }
+    
+    
+</script>

@@ -6,7 +6,7 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 from django.core.exceptions import ValidationError
-from .models import MyUser
+from .models import ZubyUser
 
 
 class UserCreationForm(forms.ModelForm):
@@ -16,7 +16,7 @@ class UserCreationForm(forms.ModelForm):
 	password2 = forms.CharField(label='Password confirmation', widget=forms.PasswordInput)
 	
 	class Meta:
-		model = MyUser
+		model = ZubyUser
 		fields = ('phone',)
 	
 	def clean_password2(self):
@@ -40,11 +40,14 @@ class UserChangeForm(forms.ModelForm):
 	the user, but replaces the password field with admin's
 	password hash display field.
 	"""
-	password = ReadOnlyPasswordHashField()
-
+	# password = ReadOnlyPasswordHashField()
+	password = ReadOnlyPasswordHashField(label=("Password"),
+        help_text=("Raw passwords are not stored, so there is no way to see "
+                    "this user's password, but you can change the password "
+                    "using <a href=\"../password/\">this form</a>."))
 	class Meta:
-		model = MyUser
-		fields = ('phone', 'password', 'is_active', 'is_admin')
+		model = ZubyUser
+		fields = ('phone', 'password', 'is_active', 'is_admin', 'is_supervisor', 'is_collector')
 	def clean_password(self):
 		# Regardless of what the user provides, return the initial value.
 		# This is done here, rather than on the field, because the
@@ -59,26 +62,27 @@ class UserAdmin(BaseUserAdmin):
 	# The fields to be used in displaying the User model.
 	# These override the definitions on the base UserAdmin
 	# that reference specific fields on auth.User.
-	list_display = ('phone', 'is_admin', 'activate')
+	list_display = ('phone', 'is_admin','is_supervisor', 'is_collector', 'activate')
 	list_filter = ('is_admin',)
 	fieldsets = (
 		(None, {'fields': ('phone', 'password')}),
 		('Personal info', {'fields': ('email','activate')}),
-		('Permissions', {'fields': ('is_admin',)}),
+		('Permissions', {'fields': ('is_admin','is_supervisor', 'is_collector')}),
 		)
 	# add_fieldsets is not a standard ModelAdmin attribute. UserAdmin
 	# overrides get_fieldsets to use this attribute when creating a user.
 	add_fieldsets = (
 	(None, {
 	'classes': ('wide',),
-	'fields': ('phone', 'email', 'password1', 'password2'),
+	'fields': ('phone', 'email', 'password1', 'password2', 'is_admin','is_supervisor', 'is_collector', 'activate'),
 	}),
 	)
 	search_fields = ('phone',)
 	ordering = ('phone',)
 	filter_horizontal = ()
 # Now register the new UserAdmin...
-admin.site.register(MyUser, UserAdmin)
+admin.site.register(ZubyUser,UserAdmin)
+# admin.site.register(MybUser)
 # ... and, since we're not using Django's built-in permissions,
 # unregister the Group model from admin.
 admin.site.unregister(Group)
@@ -88,6 +92,16 @@ admin.site.register(Level)
 admin.site.register(Bankdetail)
 admin.site.register(Guarantor)
 admin.site.register(Loan)
+admin.site.register(LoanPayment)
+admin.site.register(Card)
+admin.site.register(VirtualAccount)
+admin.site.register(Repayment)
+admin.site.register(Otp)
+admin.site.register(Loanstatus)
 admin.site.register(Contactlist)
+admin.site.register(Supervisor)
+admin.site.register(Collector)
+# admin.site.register(CollectorRecord)
+# admin.site.register(Order)
 
 # Register your models here.
