@@ -25,13 +25,14 @@ SECRET_KEY = '7zdl_0vrhabo4ig=_97-1s1!bbf(o2zx5%dvwl2%5)^f-e06b9'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = '*'
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
 
 INSTALLED_APPS = [
     'loanapp',
+    'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
     'django.contrib.admin',
@@ -44,6 +45,7 @@ INSTALLED_APPS = [
 
 
 REST_FRAMEWORK = {
+        'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'DEFAULT_AUTHENTICATION_CLASSES':[
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
@@ -53,12 +55,17 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ]
 }
-
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:19006",
+    "http://localhost:3000",
+    "https://zeecash.com.ng"
+]
 
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -90,18 +97,31 @@ WSGI_APPLICATION = 'zubee.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': "zubydata",
+        'USER': 'zubydata',
+        'PASSWORD': "@Quadrat1",
+        'HOST': "db4free.net",
+        'PORT': "3306",
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+        }
     }
 }
 
 
-
 ACCOUNT_USER_MODEL_USERNAME_FIELD= None
 ACCOUNT_USERNAME_REQUIRED= False
-AUTH_USER_MODEL = 'loanapp.MyUser'
+AUTH_USER_MODEL = 'loanapp.ZubyUser'
 ACCOUNT_AUTHENTICATION_METHOD= 'phone'
 
 # Password validation
@@ -141,3 +161,4 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+DEFAULT_AUTO_FIELD='django.db.models.BigAutoField'

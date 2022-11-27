@@ -1,20 +1,25 @@
+from pickle import FALSE
 from django.shortcuts import render, redirect
 import requests as req
 import datetime
 
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
+
+from loanapp.utils import verifypayment
 from .models import *
-from .serializers import ( Otpserializer,Costumerserializer, Userserializer,
+from .serializers import ( UserSerializer, Otpserializer,Costumerserializer, 
 Bankdetailserializer, Guarantorserializer, LOanserializer)
 from rest_framework.views import APIView
 import string
 from random import choice
 
+from django.contrib.auth import authenticate, login, logout
 
 
 
@@ -27,16 +32,21 @@ def idk(i):
 
 @api_view(['POST'])
 def login(request):
-    user, newuser=MyUser.objects.get_or_create(phone=request.data['phone'],)
+    print(request.data)
+    user, newuser=ZubyUser.objects.get_or_create(phone=request.data['phone'],)
     if user.activate:
         data={
             'username': request.data['phone'],
             'password': request.data['password']
         }
-
-        a=req.post('http://127.0.0.1:8000/api-token-auth/', data=data)
+        # user= authenticate(request, username=request.data['phone'], password=request.data['password'])
+        # if user is not None:
+        #     login(request,user)
+        a=req.post('http://192.168.204.1:8000/api-token-auth/', data=data)
         print(a.json())
+
         return Response(a.json())
+    print(6666)
     return Response({'message': 'you do not own an account or forgetten password'},
     status=status.HTTP_400_BAD_REQUEST)
 
@@ -57,23 +67,26 @@ def pay(request):
 
 
 @api_view(['GET'])
-def apply(request, amount):
+def apply(request, amount, dur=14):
     existing=False
     try:
-        if request.user.costumer.loan:
-            existing=True
+        if request.user.costumer.loan_set.all().count()>0:
+            loan=request.user.costumer.loan_set.all().last()
+            if not loan.paid:
+                existing=True
     except:
+        
         pass
 
     if existing:
-        return Response({'message':'already apply'},status=status.HTTP_403_FORBIDDEN)
+        return Response({'message':'already apply', 'status':'failed'},status=status.HTTP_403_FORBIDDEN)
     
     if request.user.costumer.level.quota < amount:
         # the user should be block, asking more than your quota is imposible from user interface
-        return Response({'message':'min amount exceeded'},status=status.HTTP_403_FORBIDDEN)
-    loan= Loan(costumer=request.user.costumer, amount=amount)
+        return Response({'message':'min amount exceeded', 'status':'failed'},status=status.HTTP_403_FORBIDDEN)
+    loan= Loan(costumer=request.user.costumer, amount=amount, duration=dur)
     loan.save()
-    return Response(status=status.HTTP_201_CREATED)
+    return Response({'message':'Your Loan is processing', 'status':'success'},status=status.HTTP_201_CREATED)
 
 
 
@@ -87,10 +100,11 @@ def due(request):
 
 @api_view(['GET'])
 def userstatus(request):
+    print(request.user.costumer)
     token=Token.objects.get(user=request.user)
     print(token)
 
-    serialize= Userserializer(instance=request.user)
+    serialize= UserSerializer(instance=request.user)
     
     return Response(serialize.data)
 
@@ -103,7 +117,7 @@ def createnewuser(request):
     # this code is useless for now
 
     if request.method=='POST':
-        serializer=Userserializer(data=request.data)
+        serializer=UserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -115,25 +129,24 @@ def createnewuser(request):
 def get_otp(request):
 
     otp_code=idk(6)
-    serializer= Userserializer(instance=request.data)
+    serializer= UserSerializer(instance=request.data)
     # if serializer.is_valid():
     # print(serializer.data)
-    user, newuser = MyUser.objects.get_or_create(phone=serializer.data['phone'],)
-    user.set_password(request.data['password'])
-    user.save()
+    user, newuser = ZubyUser.objects.get_or_create(phone=serializer.data['phone'],)
+    
     otp, _ = Otp.objects.get_or_create(user=user)
     otp.otp=otp_code
     otp.created=datetime.datetime.today()
     print(otp_code)
     otp.save()
-    return Response({'massage':'ok'}, status=status.HTTP_200_OK)
+    return Response({'massage':'ok', 'code':otp_code}, status=status.HTTP_200_OK)
     # return Response(status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 def verify_otp(request):
     print(request.data)
     try:
-        user=MyUser.objects.get(phone=request.data['phone'])
+        user=ZubyUser.objects.get(phone=request.data['phone'])
         otp=Otp.objects.get(otp=request.data['otp'], user=user)
     except:
         return Response({'message':'otp not found'}, status=status.HTTP_400_BAD_REQUEST)
@@ -146,7 +159,9 @@ def verify_otp(request):
     if t - created > expire:
         return Response({'message':'otp expired'})
     else:
+
         user.activate=True
+        user.set_password(request.data['password'])
         user.save()
         return Response({'message':'account activate'}, status=status.HTTP_200_OK)
 	
@@ -164,12 +179,12 @@ def costumerprofile(request):
     if request.method=='PUT':
         costumer=Costumer.objects.get(user=request.user)
         serializer=Costumerserializer(costumer,data=request.data)
-        if serializer.is_valid():
+        if serializer.is_valid(raise_exception=True):
             serializer.save()
-            return Response(serializer.data)
-        return Response()
+            return Response({"data":serializer.data, 'status':"success"})
+        return Response({'message':'your personal detail was not updated ', 'status': "failed"})
     
-    if request.methed=='POST':
+    if request.method=='POST':
         serializer=Costumerserializer(request.data)
         if serializer.is_valid():
             serializer.save()
@@ -211,15 +226,21 @@ def costumer_guarantor(request):
 
     if request.method=='GET':
         guarantor=Guarantor.objects.filter(costumer=request.user.costumer)
+        print(guarantor)
         serializer=Guarantorserializer(guarantor, many=True)
+        print(serializer.data)
         return Response(serializer.data)
     
     if request.method=='PUT':
-        guarantor=Guarantor.objects.get(costumer=request.user.costumer)
-        serializer=Guarantorserializer(guarantor,data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
+        guarantor=Guarantor.objects.filter(costumer=request.user.costumer)
+        print(guarantor)
+        for item in request.data:
+            serializer=Guarantorserializer(guarantor[request.data.index(item)],data=item)
+            # print(serializer)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+            print(serializer.data)
+            # return Response(serializer.data)
         return Response()
     
     if request.method=='POST':
@@ -260,7 +281,7 @@ def loandetail(request):
 #         serializer=Costumerserializer(costumer)
     
 #     if request.method=='POST':
-#         serializer=Userserializer(data=request.data)
+#         serializer=UserSerializer(data=request.data)
 #         if serializer.is_valid():
 #             serializer.save()
 #             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -282,5 +303,56 @@ def loandetail(request):
 #             serialize.save()
     
 #     return Response(serialize.data)
+
+@api_view(['GET'])
+def get_repayment_ref(request, id):
+    loan = Loan.objects.get(id=id)
+    ref="ZRM"+idk(17)
+    # print(loan.repayment_set.all().last().amount)
+    if loan.repayment_set.all().count()==0:
+        repayment= Repayment.objects.create(loan=loan, ref=ref)
+        print
+        return Response({"message":repayment.ref}) 
+    print("was here")
+    if  loan.repayment_set.all().last().amount != 0:
+        repayment= Repayment.objects.create(loan=loan, ref="ZRM"+idk(17))
+        return Response({"message":repayment.ref}) 
+    print(ref)
+    ref=Repayment.objects.filter(loan=loan).last().ref
+    print(ref)
+    return Response({"message":ref}) 
+    
+@api_view(['GET'])
+def verify_repayment(request, ref):
+    # change ref to alpha numeric to prevent reoccurence
+    try:
+        repayment= Repayment.objects.get(ref=ref)
+    except:
+        return Response({'message':'ref exit not'})
+    if repayment:
+        try:
+            res=verifypayment(ref)
+            # i dont think card eed to be save here o
+            Card.objects.get_or_create(costumer=request.user.costumer, token=res['flwRef'], ref=res['txRef'] )
+            repayment.amount=res['amount']
+            repayment.save()
+        except :
+            return Response({"message":"flutter error"}, status=status.HTTP_424_FAILED_DEPENDENCY)
+    
+    return Response({"message":"repayment successful"}, status=status.HTTP_202_ACCEPTED)
+
+
+
+
+@api_view(['GET'])
+def confirm_repayment_paid(request):
+    # user = request.user
+    print(222)
+    print(request.user.costumer)
+    costumer=request.user.costumer
+    loans= Loan.objects.filter(costumer=costumer, paid=False)
+    for loan in loans:
+        loan.collate_repayment()
+    return Response({'message':"ok"},status=status.HTTP_204_NO_CONTENT)
 
 # Create your views here.
