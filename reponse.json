@@ -39,7 +39,7 @@
 {
     {
         "status": "success",
-        "message": "Transfer Queued Successfully",
+        "message": "Transfer Queued successfuly",
         "data": {
             "id": 37803414,
             "account_number": "2085971163",

@@ -48,10 +48,16 @@ def create_virtual_account():
 # create_virtual_account()
 
 def verifypayment(ref):
-    v=rave.Card(FLUTTERWAVE_PUBLIC_KEY,FLUTTERWAVE_SECRET_KEY, production=False, usingEnv=False)
-    res = rave.Card.verify(v, ref)
-    print(res)
-    return res
+    url="https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref="+ref
+    headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer '+FLUTTERWAVE_SECRET_KEY
+    }
+
+    res = requests.request("get", url, headers=headers)
+
+    print(res.text)
+    return res.json()
 def chargecard():
     v=rave.Card(FLUTTERWAVE_PUBLIC_KEY,FLUTTERWAVE_SECRET_KEY, production=False, usingEnv=False)
     res = rave.Card.charge(v, 
@@ -83,19 +89,10 @@ def chargecard():
 #     )
     return res
 
-def transfer_to_account():
+def transfer_to_account(data):
     url = "https://api.flutterwave.com/v3/transfers"
 
-    payload = json.dumps({
-    "account_bank": "033",
-    "account_number": "2085971163",
-    "amount": 100,
-    "narration": "Akhlm Pstmn Trnsfr xx007",
-    "currency": "NGN",
-    "reference": "akhlm-pstmnpyt-rfxx007_PMCKDU_1",
-    "callback_url": "https://webhook.site/b3e505b0-fe02-430e-a538-22bbbce8ce0d",
-    "debit_currency": "NGN"
-    })
+    payload = json.dumps(data)
     headers = {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer '+FLUTTERWAVE_SECRET_KEY
@@ -104,6 +101,7 @@ def transfer_to_account():
     response = requests.request("POST", url, headers=headers, data=payload)
 
     print(response.text)
+    return response.json()
 
 # transfer_to_account()
 

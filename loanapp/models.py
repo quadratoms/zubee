@@ -259,7 +259,7 @@ class Loan(models.Model):
 
     @property
     def disburst(self) -> bool:
-        return self.loanpayment.successfull
+        return self.loanpayment.successful
 
     @property
     def total_repayment(self):
@@ -275,19 +275,34 @@ class Loan(models.Model):
     #     if date.today
 
     def pay(self):
-        payment = LoanPayment.objects.get(loan=self)
+        payment, _= LoanPayment.objects.get_or_create(loan=self)
 
         data = {
-            "account_bank": Bankdetail.objects.get(costumer=self.costumer).bank_name,#bank_code
+            "account_bank": "033",#Bankdetail.objects.get(costumer=self.costumer).bank_name,#bank_code
             "narration": "New transfer",
             "currency": "NGN",
-            "amount": self.get_amount_out(),
+            "amount": "100", #self.get_amount_out(),
             "beneficiary_name": self.costumer.fullname,
             "account_number": Bankdetail.objects.get(costumer=self.costumer).account_no,
+            "amount": 100,
+            "narration": "Akhlm Pstmn Trnsfr xx007",
+            "reference": "",
+            "callback_url": "https://webhook.site/b3e505b0-fe02-430e-a538-22bbbce8ce0d",
+            "debit_currency": "NGN"
         }
-        # res=transfer_to_account(data)
+        res=transfer_to_account(data)
         # if conditon payment was succssfull or failed
-        payment.successfull = True
+        payment.successful = True
+        payment.account_number=res["data"]["account_number"]
+        payment.bank_code=res["data"]["bank_code"]
+        payment.full_name=res["data"]["full_name"]
+        payment.created_at=res["data"]["created_at"]
+        payment.amount=res["data"]["amount"]
+        payment.status=res["data"]["status"]
+        payment.reference=res["data"]["reference"]
+        payment.complete_message=res["data"]["complete_message"]
+        payment.bank_name=res["data"]["bank_name"]
+        payment.id_from_method=res["data"]["id"]
         payment.save()
         print(payment)
 
@@ -331,8 +346,8 @@ class Loanhistory(models.Model):
 class Repayment(models.Model):
     loan = models.ForeignKey(Loan, on_delete=models.PROTECT)
     ref = models.CharField(blank=True, null=True, max_length=20)
-    amount = models.IntegerField(default=0)
-    paid_at=models.DateTimeField(null=True)
+    amount = models.IntegerField(default=0, blank=True)
+    paid_at=models.DateTimeField(null=True, blank=True)
     receive_by=models.ForeignKey('Collector', null=True, blank=True, on_delete=models.PROTECT)
 
     def collate_repayment(self):
@@ -348,9 +363,18 @@ def save_repayment(sender, instance=None, created=False, **kwargs):
 
 class LoanPayment(models.Model):
     loan = models.OneToOneField(Loan, on_delete=models.PROTECT)
-    ref = models.CharField(blank=True, null=True, max_length=20)
-    amount = models.IntegerField(default=0)
-    successfull = models.BooleanField(default=False)
+    ref = models.CharField(blank=True, null=True, max_length=100)
+    id_from_method = models.CharField(blank=True, null=True, max_length=100)
+    account_number = models.CharField(blank=True, null=True, max_length=100)
+    bank_code = models.CharField(blank=True, null=True, max_length=100)
+    full_name = models.CharField(blank=True, null=True, max_length=100)
+    created_at = models.CharField(blank=True, null=True, max_length=100)
+    status = models.CharField(blank=True, null=True, max_length=100)
+    reference = models.CharField(blank=True, null=True, max_length=100)
+    complete_message = models.CharField(blank=True, null=True, max_length=100)
+    bank_name = models.CharField(blank=True, null=True, max_length=100)
+    amount = models.CharField(blank=True, null=True, max_length=100)
+    successful = models.BooleanField(default=False)
 
 
 class Supervisor(models.Model):

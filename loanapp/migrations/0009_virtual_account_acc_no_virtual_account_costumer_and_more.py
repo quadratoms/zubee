@@ -57,7 +57,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('ref', models.CharField(blank=True, max_length=20, null=True)),
                 ('amount', models.IntegerField(default=0)),
-                ('successfull', models.BooleanField(default=False)),
+                ('successful', models.BooleanField(default=False)),
                 ('loan', models.OneToOneField(on_delete=django.db.models.deletion.PROTECT, to='loanapp.loan')),
             ],
         ),
