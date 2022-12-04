@@ -59,7 +59,8 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:19006",
     "http://localhost:3000",
-    "https://zeecash.com.ng"
+    "https://zeecash.com.ng",
+    "http://127.0.0.1:5173"
 ]
 
 
@@ -98,26 +99,26 @@ WSGI_APPLICATION = 'zubee.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': "zubydata",
-        'USER': 'zubydata',
-        'PASSWORD': "@Quadrat1",
-        'HOST': "db4free.net",
-        'PORT': "3306",
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
-        }
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': "zubydata",
+#         'USER': 'zubydata',
+#         'PASSWORD': "@Quadrat1",
+#         'HOST': "db4free.net",
+#         'PORT': "3306",
+#         'OPTIONS': {
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+#         }
+#     }
+# }
 
 
 ACCOUNT_USER_MODEL_USERNAME_FIELD= None

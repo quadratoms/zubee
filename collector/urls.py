@@ -9,5 +9,6 @@ urlpatterns = [
     path('orders/', get_all_order, name='orders'),
     path('orderss/', CollectorOrder.as_view(), name='orderss'),
     path('addcomment/', addcomment, name='addcomment'),
+    path('payout/<int:id>/', payoutloan, name='payout'),
     
 ]

@@ -332,10 +332,12 @@ def verify_repayment(request, ref):
     if repayment:
         try:
             res=verifypayment(ref)
+            # print(res["amount"])
             # i dont think card eed to be save here o
-            Card.objects.get_or_create(costumer=request.user.costumer, token=res['flwRef'], ref=res['txRef'] )
-            repayment.amount=res['amount']
+            # Card.objects.get_or_create(costumer=request.user.costumer, token=res['flwRef'], ref=res['txRef'] )
+            repayment.amount=res['data']['amount']
             repayment.save()
+            print("i wass here")
         except :
             return Response({"message":"flutter error"}, status=status.HTTP_424_FAILED_DEPENDENCY)
     
@@ -354,5 +356,6 @@ def confirm_repayment_paid(request):
     for loan in loans:
         loan.collate_repayment()
     return Response({'message':"ok"},status=status.HTTP_204_NO_CONTENT)
+
 
 # Create your views here.
