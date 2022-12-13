@@ -87,7 +87,7 @@ admin.site.register(ZubyUser,UserAdmin)
 # unregister the Group model from admin.
 admin.site.unregister(Group)
 
-admin.site.register(Costumer)
+admin.site.register(Customer)
 admin.site.register(Level)
 admin.site.register(Bankdetail)
 admin.site.register(Guarantor)
@@ -101,7 +101,7 @@ admin.site.register(Loanstatus)
 admin.site.register(Contactlist)
 admin.site.register(Supervisor)
 admin.site.register(Collector)
-# admin.site.register(CollectorRecord)
-# admin.site.register(Order)
+admin.site.register(Contact)
+admin.site.register(CustomerImage)
 
 # Register your models here.
