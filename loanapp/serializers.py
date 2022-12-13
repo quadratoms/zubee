@@ -14,13 +14,21 @@ class Levelserializer(serializers.ModelSerializer):
 class Bankdetailserializer(serializers.ModelSerializer):
     class Meta:
         model = Bankdetail
-        fields = ["bank_name", "account_no"]
+        fields = ["bank_code", "account_no"]
+
+
+class VirtualAccountserializer(serializers.ModelSerializer):
+    class Meta:
+        model = VirtualAccount
+        fields = "__all__"
+
+
 
 class Commentserializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields=[
-            'costumer',
+            'customer',
             'collection_type',
             'collection_object',
             'collection_contact',
@@ -39,7 +47,7 @@ class LOanserializer(serializers.ModelSerializer):
         model = Loan
         fields = [
             "id",
-            "costumer",
+            "customer",
             "amount",
             "interest_rate",
             "request_date",
@@ -54,17 +62,18 @@ class LOanserializer(serializers.ModelSerializer):
         ]
 
 
-class Costumerserializer(serializers.ModelSerializer):
+class Customerserializer(serializers.ModelSerializer):
     comments=Commentserializer(many=True, read_only=True)
     level = Levelserializer(read_only=True)
     loans = LOanserializer(many=True, read_only=True)
     bankdetail = Bankdetailserializer(
         read_only=True,
     )
-    guarantors = Guarantorserializer(many=True)
+    virtual_account=VirtualAccountserializer(read_only=True)
+    guarantors = Guarantorserializer(many=True, read_only=True)
 
     class Meta:
-        model = Costumer
+        model = Customer
         fields = [
             "id",
             "firstname",
@@ -81,23 +90,26 @@ class Costumerserializer(serializers.ModelSerializer):
             "bankdetail",
             "level",
             "guarantors",
-            "comments"
+            "comments",
+            "virtual_account",
         ]
         extra_kwargs = {
             "id": {"read_only": True},
-            "firstname": {"read_only": True},
-            "lastname": {"read_only": True},
+            # "firstname": {"read_only": True},
+            # "lastname": {"read_only": True},
         }
 
 
+
+
 class Loanserializer(serializers.ModelSerializer):
-    costumer = Costumerserializer(read_only=True)
+    customer = Customerserializer(read_only=True)
 
     class Meta:
         model = Loan
         fields = [
             "id",
-            "costumer",
+            "customer",
             "amount",
             "interest_rate",
             "request_date",
@@ -113,14 +125,15 @@ class Loanserializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    costumer = Costumerserializer(read_only=True)
+    customer = Customerserializer(read_only=True)
 
     class Meta:
         model = ZubyUser
         fields = [
             "phone",
             "password",
-            "costumer",
+            "email",
+            "customer",
         ]
         extra_kwargs = {"password": {"write_only": True}}
 
@@ -145,5 +158,12 @@ class Collectorserializer(serializers.ModelSerializer):
         models = Collector
         fields = "__all__"
 
+
+
+
+class Imageserializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerImage
+        fields = "__all__"
 
 # .....

@@ -11,6 +11,7 @@ from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 
 from loanapp.utils import create_virtual_account, idk, transfer_to_account
 
+import jsonfield
 
 class MyUserManager(BaseUserManager):
     def create_user(self, phone, password="1234", **extra_fields):
@@ -96,7 +97,7 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
         Token.objects.create(user=instance)
         # all user will have token
     if not instance.is_staff:
-        Costumer.objects.get_or_create(user=instance)
+        Customer.objects.get_or_create(user=instance)
     else:
         if instance.is_collector:
             Collector.objects.get_or_create(user=instance)
@@ -106,7 +107,7 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
             pass
 
 
-class Costumer(models.Model):
+class Customer(models.Model):
     level = models.ForeignKey(Level, null=True, blank=True, on_delete=models.CASCADE)
     user = models.OneToOneField(ZubyUser, on_delete=models.CASCADE)
     firstname = models.CharField(max_length=20)
@@ -132,7 +133,17 @@ class Costumer(models.Model):
 
     @property
     def loan(self):
-        return Loan.objects.filter(costumer=self).last()
+        return Loan.objects.filter(customer=self).last()
+
+@receiver(post_save, sender=Customer)
+def create_contact(sender, instance:Customer|None=None, created=False, **kwargs):
+    if created:
+        Contact.objects.create(customer=instance)
+        Bankdetail.objects.create(customer=instance)
+        levels=Level.objects.all()
+        if levels.count()>0:
+            instance.level=levels[0]
+            instance.save()
 
 
 class Otp(models.Model):
@@ -142,23 +153,23 @@ class Otp(models.Model):
 
 
 class VirtualAccount(models.Model):
-    costumer = models.ForeignKey(Costumer, on_delete=models.CASCADE)
+    customer = models.OneToOneField(Customer, on_delete=models.CASCADE, related_name="virtual_account")
     name = models.CharField(max_length=50, blank=True, null=True)
     acc_no = models.CharField(max_length=50, blank=True, null=True)
     created = models.DateTimeField(auto_now=False, auto_now_add=True, null=True)
     data = models.JSONField(null=True)
 
-    def create(self, amount):
-        """
-        only when user mail is not none
-        """
-        email = self.costumer.user.email
-        data = create_virtual_account(email, amount)
-        # do somethhing with the data
+    # def create(self, amount):
+    #     """
+    #     only when user mail is not none
+    #     """
+    #     email = self.customer.user.email
+    #     data = create_virtual_account(email, amount)
+    #     # do somethhing with the data
 
 
 class Card(models.Model):
-    costumer = models.ForeignKey(Costumer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     token = models.CharField(max_length=50, blank=True, null=True)
     ref = models.CharField(max_length=50, blank=True, null=True)
     first_6digits = models.CharField(max_length=50, blank=True, null=True)
@@ -171,28 +182,51 @@ class Card(models.Model):
 
 
 class Contactlist(models.Model):
-    costumer = models.OneToOneField(Costumer, null=True, on_delete=models.CASCADE)
+    customer = models.OneToOneField(Customer, null=True, on_delete=models.CASCADE)
     contacts = models.JSONField(null=True)
+
+class Image(models.Model):
+    customer = models.ForeignKey(Customer, null=True, on_delete=models.CASCADE, related_name="customer_name")
+    image = models.ImageField(upload_to='customerImage', null=False)
 
 
 class Bankdetail(models.Model):
-    costumer = models.OneToOneField(Costumer, on_delete=models.CASCADE)
+    customer = models.OneToOneField(Customer, on_delete=models.CASCADE)
     # the account number and the bvn should be encypt for security sake
-    bank_name = models.CharField(blank=True, null=True, max_length=100)
+    bank_code = models.CharField(blank=True, null=True, max_length=100)
     account_no = models.CharField(blank=True, null=True, max_length=100)
     bvn = models.CharField(blank=True, null=True, max_length=100)
     is_verify = models.CharField(blank=True, null=True, max_length=100)
 
     def verify(self):
-        self.is_verify = True
-        self.save()
-        return self
+        print(self.customer.user.email)
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>")
+        data={
+            "email": self.customer.user.email,
+            "is_permanent": True,
+            "narration": self.customer.fullname+ "from zeecash",
+            "bvn": self.bvn,
+            "name": self.customer.fullname,
+            # "tx_ref": self.customer.fullname,
+        }
+        res= create_virtual_account(data)
+        print(res)
+        virtual, _=VirtualAccount.objects.get_or_create(customer=self.customer)
+        if res['status'] == 'success':
+            virtual.acc_no=res['data']['account_number']
+            virtual.name=res['data']['bank_name']
+            virtual.data=res
+            virtual.save()
+            return True
+        return False
+
+
 
 
 class Guarantor(models.Model):
-    # two guarantor per costumer
-    costumer = models.ForeignKey(
-        Costumer, on_delete=models.CASCADE, related_name="guarantors"
+    # two guarantor per customer
+    customer = models.ForeignKey(
+        Customer, on_delete=models.CASCADE, related_name="guarantors"
     )
     name = models.CharField(max_length=50, blank=True, null=True)
     address = models.TextField(null=True, blank=True)
@@ -217,8 +251,8 @@ class Loanstatus(models.Model):
 
 
 class Loan(models.Model):
-    costumer = models.ForeignKey(
-        Costumer, on_delete=models.CASCADE, related_name="loans"
+    customer = models.ForeignKey(
+        Customer, on_delete=models.CASCADE, related_name="loans"
     )
     collector = models.ForeignKey(
         "Collector", on_delete=models.CASCADE, null=True, blank=True
@@ -268,8 +302,8 @@ class Loan(models.Model):
         amount = sum([amount + i.amount for i in allpayment])
         return amount
 
-    def get_amount_out(self) -> int:
-        return self.amount - (self.amount * self.interest_rate / 100)
+    # def get_amount_out(self) -> int:
+    #     return self.amount - (self.amount * self.interest_rate / 100)
 
     # def due(self):
     #     if date.today
@@ -278,16 +312,16 @@ class Loan(models.Model):
         payment, _= LoanPayment.objects.get_or_create(loan=self)
 
         data = {
-            "account_bank": "033",#Bankdetail.objects.get(costumer=self.costumer).bank_name,#bank_code
-            "narration": "New transfer",
+            "account_bank": Bankdetail.objects.get(customer=self.customer).bank_code,
             "currency": "NGN",
-            "amount": "100", #self.get_amount_out(),
-            "beneficiary_name": self.costumer.fullname,
-            "account_number": Bankdetail.objects.get(costumer=self.costumer).account_no,
+            # "amount": self.get_amount_out(),
+            "amount": self.amount,
+            "beneficiary_name": self.customer.fullname,
+            "account_number": Bankdetail.objects.get(customer=self.customer).account_no,
             "amount": 100,
-            "narration": "Akhlm Pstmn Trnsfr xx007",
-            "reference": "",
-            "callback_url": "https://webhook.site/b3e505b0-fe02-430e-a538-22bbbce8ce0d",
+            "narration": "Loan disburstment to "+ self.customer.fullname,
+            "reference": "zeepayout-"+idk(20),
+            "callback_url": "whotnews.buzz/paymentdata",
             "debit_currency": "NGN"
         }
         res=transfer_to_account(data)
@@ -337,7 +371,7 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
 
 
 class Loanhistory(models.Model):
-    costumer = models.ForeignKey(Costumer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     amount = models.IntegerField(default=0)
     borrow_date = models.DateField(auto_now=False, auto_now_add=False)
     paid_date = models.DateField(auto_now=False, auto_now_add=False)
@@ -415,14 +449,40 @@ class Cashout(models.Model):
 
 
 class Comment(models.Model):
-    costumer = models.ForeignKey(
-        Costumer, on_delete=models.PROTECT, null=True, related_name="comments"
+    customer = models.ForeignKey(
+        Customer, on_delete=models.PROTECT, null=True, related_name="comments"
     )
     collection_type = models.CharField(max_length=20)
     collection_object = models.CharField(max_length=20)
     collection_contact = models.CharField(max_length=20)
     collection_comment = models.TextField()
     collection_status = models.CharField(max_length=20)
+
+
+
+class Contact(models.Model):
+    customer= models.OneToOneField(
+        Customer, on_delete=models.CASCADE, null=True,
+    )
+    data = jsonfield.JSONField()
+
+class CustomerImage(models.Model):
+    customer= models.ForeignKey(
+        Customer, on_delete=models.CASCADE, null=True,related_name="customer_image"
+    )
+    image = models.ImageField(
+        upload_to="customerImage",
+        null=True,
+        blank=True,
+        height_field=None,
+        width_field=None,
+        max_length=None,
+    )
+
+
+class PaymentData(models.Model):
+    data = jsonfield.JSONField()
+
 
 
 # Create your models here.
