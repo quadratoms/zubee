@@ -23,6 +23,12 @@ class VirtualAccountserializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class Cardserializer(serializers.ModelSerializer):
+    class Meta:
+        model = Card
+        fields = "__all__"
+
+
 
 class Commentserializer(serializers.ModelSerializer):
     class Meta:
@@ -66,6 +72,7 @@ class Customerserializer(serializers.ModelSerializer):
     comments=Commentserializer(many=True, read_only=True)
     level = Levelserializer(read_only=True)
     loans = LOanserializer(many=True, read_only=True)
+    cards = Cardserializer(many=True, read_only=True)
     bankdetail = Bankdetailserializer(
         read_only=True,
     )
@@ -92,6 +99,7 @@ class Customerserializer(serializers.ModelSerializer):
             "guarantors",
             "comments",
             "virtual_account",
+            "cards",
         ]
         extra_kwargs = {
             "id": {"read_only": True},
