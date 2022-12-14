@@ -169,7 +169,7 @@ class VirtualAccount(models.Model):
 
 
 class Card(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="cards")
     token = models.CharField(max_length=50, blank=True, null=True)
     ref = models.CharField(max_length=50, blank=True, null=True)
     first_6digits = models.CharField(max_length=50, blank=True, null=True)
