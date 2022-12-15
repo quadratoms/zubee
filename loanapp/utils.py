@@ -4,7 +4,7 @@ import string
 from .constant import FLUTTERWAVE_SECRET_KEY
 from rave_python import rave
 import requests
-from .constant import FLUTTERWAVE_PUBLIC_KEY
+from .constant import FLUTTERWAVE_PUBLIC_KEY, WHISPER_API_KEY
 
 
 def idk(i):
@@ -17,7 +17,7 @@ def idk(i):
 
 def create_virtual_account(data):
     # v=rave.VirtualAccount(FLUTTERWAVE_PUBLIC_KEY,FLUTTERWAVE_SECRET_KEY, production=False, usingEnv=False)
-    data["seckey"]=FLUTTERWAVE_SECRET_KEY
+    data["seckey"] = FLUTTERWAVE_SECRET_KEY
     r = requests.post(
         "https://api.flutterwave.com/v3/virtual-account-numbers",
         json=data,
@@ -157,3 +157,18 @@ def bvn():
 #     z.save()
 
 # bvn()
+
+
+def send_message(numbers):
+
+    url = "https://whispersms.xyz/api/send_message/"
+
+    payload = json.dumps(numbers)
+    headers = {
+        "Authorization": ""+WHISPER_API_KEY,
+        "Content-Type": "application/json",
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+
+    print(response.text)
