@@ -150,7 +150,24 @@ class Otp(models.Model):
     user = models.OneToOneField("loanapp.zubyuser", on_delete=models.CASCADE, null=True)
     otp = models.IntegerField(blank=True, null=True)
     created = models.DateTimeField(auto_now=False, auto_now_add=True, null=True)
+    today=models.DateField()
+    today_count=models.IntegerField(default=0)
 
+
+    def set_otp(self, otp_code):
+        if self.today==date.today():
+            if self.today_count > 4:
+                return False
+            else:
+                self.otp=otp_code
+                self.today_count += 1
+                self.save()
+                return True
+        self.otp=otp_code
+        self.today=date.today()
+        self.today_count=1
+        self.save()
+        return True
 
 class VirtualAccount(models.Model):
     customer = models.OneToOneField(Customer, on_delete=models.CASCADE, related_name="virtual_account")

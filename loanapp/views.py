@@ -12,8 +12,9 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
+import phonenumbers
 
-from loanapp.utils import verifypayment
+from loanapp.utils import send_message, verifypayment
 from .models import *
 from .serializers import (
     Imageserializer,
@@ -102,12 +103,26 @@ def apply(request, amount, dur=14):
             {"message": "min amount exceeded", "status": "failed"},
             status=status.HTTP_403_FORBIDDEN,
         )
-    loan = Loan(customer=request.user.customer, amount=amount, duration=dur)
-    loan.save()
+
+    virtual=VirtualAccount.objects.filter(customer=request.user.customer)
+    card= Card.objects.filter(customer=request.user.customer)
+    contact=Contact.objects.filter(customer=request.user.customer)
+    if contact.exists():
+        if len(contact[0].data)<30:
+            return Response(
+                {"message": "Your Loan cant be process, no enough data "},
+                status=status.HTTP_403_FORBIDDEN)
+    if virtual.exists() and card.exists():
+        loan = Loan(customer=request.user.customer, amount=amount, duration=dur)
+        loan.save()
+        return Response(
+            {"message": "Your Loan is processing", "status": "success"},
+            status=status.HTTP_201_CREATED,
+        )
     return Response(
-        {"message": "Your Loan is processing", "status": "success"},
-        status=status.HTTP_201_CREATED,
-    )
+            {"message": "Your Loan cant be process verify you bvn and bank details", "status": "fail"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
 
 
 @api_view(["GET"])
@@ -237,12 +252,31 @@ def get_otp(request):
     )
 
     otp, _ = Otp.objects.get_or_create(user=user)
-    otp.otp = otp_code
+    # otp.otp = otp_code
     otp.created = datetime.datetime.today()
     print(otp_code)
     otp.save()
-    return Response({"massage": "ok", "code": otp_code}, status=status.HTTP_200_OK)
-    # return Response(status=status.HTTP_400_BAD_REQUEST)
+    s = otp.set_otp(otp_code)
+
+    if s:
+        phone = phonenumbers.parse("234" + request.data["phone"])
+        print(phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164))
+        phone = phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
+
+        send_message(
+            {
+                "contacts": [phone],
+                "sender_id": "Atomus",
+                "message": "Hello Zeecash is here, your otp code is " + otp_code,
+                # "send_date": "14-12-2022 00:42",
+                "priority_route": False,
+                "campaign_name": "Testing",
+            }
+        )
+        return Response({"massage": "ok"}, status=status.HTTP_200_OK)
+    return Response(
+        {"massage": "try again tommorrow"}, status=status.HTTP_400_BAD_REQUEST
+    )
 
 
 @api_view(["POST"])
@@ -256,7 +290,7 @@ def verify_otp(request):
             {"message": "otp not found"}, status=status.HTTP_400_BAD_REQUEST
         )
     t = datetime.datetime.today()
-    expire = datetime.timedelta(minutes=3)
+    expire = datetime.timedelta(minutes=6)
     created = otp.created.replace(tzinfo=None)
     print("now", t.time())
     print("exp", expire)
@@ -560,7 +594,7 @@ def payment_data(request):
                     type=cardtype,
                     token=token,
                     expiry=expiry,
-                    data=res["data"]
+                    data=res["data"],
                 )
             except:
                 print("===========")
