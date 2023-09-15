@@ -150,7 +150,7 @@ class Otp(models.Model):
     user = models.OneToOneField("loanapp.zubyuser", on_delete=models.CASCADE, null=True)
     otp = models.IntegerField(blank=True, null=True)
     created = models.DateTimeField(auto_now=False, auto_now_add=True, null=True)
-    today=models.DateField()
+    today=models.DateField(auto_now=False, auto_now_add=False, null=True)
     today_count=models.IntegerField(default=0)
 
 
@@ -306,7 +306,7 @@ class Loan(models.Model):
 
         # print(lapse)
         # assumming that one percent incrase every day after lapse day
-        return initial + (self.amount * 0.005 * lapse), lapse
+        return initial + (self.amount * 0.02 * lapse), lapse
 
     @property
     def disburst(self) -> bool:

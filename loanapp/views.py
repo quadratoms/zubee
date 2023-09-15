@@ -29,7 +29,8 @@ from rest_framework.views import APIView
 import string
 from random import choice
 from django.views.decorators.csrf import csrf_exempt
-
+from django.conf import settings
+import requests
 from django.contrib.auth import authenticate, login, logout
 
 
@@ -43,25 +44,26 @@ def idk(i):
 
 @api_view(["POST"])
 def login(request):
-    print(request.data)
-    user, newuser = ZubyUser.objects.get_or_create(
-        phone=request.data["phone"],
-    )
-    if user.activate:
-        data = {"username": request.data["phone"], "password": request.data["password"]}
-        # user= authenticate(request, username=request.data['phone'], password=request.data['password'])
-        # if user is not None:
-        #     login(request,user)
-        a = req.post("http://192.168.204.1:8000/api-token-auth/", data=data)
-        print(a.json())
+    phone = request.data.get('phone')
+    password = request.data.get('password')
 
-        return Response(a.json())
-    print(6666)
-    return Response(
-        {"message": "you do not own an account or forgetten password"},
-        status=status.HTTP_400_BAD_REQUEST,
-    )
+    if not phone or not password:
+        return JsonResponse({'error': 'phone and password are required'}, status=400)
 
+    user = authenticate(username=phone, password=password)
+    if user is not None:
+        if user.is_active:
+            # login(request, user)
+            data = {"username": phone, "password": password}
+            res = requests.post(settings.API_TOKEN_AUTH, data=data)
+            if res.status_code == 200:
+                return JsonResponse(res.json())
+            else:
+                return JsonResponse({'error': 'Invalid credentials'}, status=400)
+        else:
+            return JsonResponse({'error': 'Your account is not activated, please contact the administrator'}, status=400)
+    else:
+        return JsonResponse({'error': 'Invalid credentials'}, status=400)
 
 @api_view(["GET"])
 def pay(request):
@@ -120,7 +122,7 @@ def apply(request, amount, dur=14):
             status=status.HTTP_201_CREATED,
         )
     return Response(
-            {"message": "Your Loan cant be process verify you bvn and bank details", "status": "fail"},
+            {"message": "Your Loan can't be process verify you bvn and bank details", "status": "fail"},
             status=status.HTTP_403_FORBIDDEN,
         )
 
@@ -259,7 +261,7 @@ def get_otp(request):
     s = otp.set_otp(otp_code)
 
     if s:
-        phone = phonenumbers.parse("234" + request.data["phone"])
+        phone = phonenumbers.parse("+234" + request.data["phone"])
         print(phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164))
         phone = phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
 

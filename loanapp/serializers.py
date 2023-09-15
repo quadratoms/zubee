@@ -29,18 +29,18 @@ class Cardserializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-
 class Commentserializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields=[
-            'customer',
-            'collection_type',
-            'collection_object',
-            'collection_contact',
-            'collection_comment',
-            'collection_status',
+        fields = [
+            "customer",
+            "collection_type",
+            "collection_object",
+            "collection_contact",
+            "collection_comment",
+            "collection_status",
         ]
+
 
 class Guarantorserializer(serializers.ModelSerializer):
     class Meta:
@@ -68,15 +68,22 @@ class LOanserializer(serializers.ModelSerializer):
         ]
 
 
+class ContactSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Contact
+        fields = ["data"]
+
+
 class Customerserializer(serializers.ModelSerializer):
-    comments=Commentserializer(many=True, read_only=True)
+    comments = Commentserializer(many=True, read_only=True)
     level = Levelserializer(read_only=True)
     loans = LOanserializer(many=True, read_only=True)
     cards = Cardserializer(many=True, read_only=True)
     bankdetail = Bankdetailserializer(
         read_only=True,
     )
-    virtual_account=VirtualAccountserializer(read_only=True)
+    virtual_account = VirtualAccountserializer(read_only=True)
+    contact = ContactSerializer(read_only=True)
     guarantors = Guarantorserializer(many=True, read_only=True)
 
     class Meta:
@@ -100,14 +107,13 @@ class Customerserializer(serializers.ModelSerializer):
             "comments",
             "virtual_account",
             "cards",
+            "contact",
         ]
         extra_kwargs = {
             "id": {"read_only": True},
             # "firstname": {"read_only": True},
             # "lastname": {"read_only": True},
         }
-
-
 
 
 class Loanserializer(serializers.ModelSerializer):
@@ -167,11 +173,10 @@ class Collectorserializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-
-
 class Imageserializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerImage
         fields = "__all__"
+
 
 # .....

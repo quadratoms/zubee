@@ -26,16 +26,17 @@ def login_staff(request):
         #     'password': request.data['password']
         # }
         user = authenticate(
-            request, username=request.data["phone"], password=request.data["password"]
+            request, phone=request.data["phone"], password=request.data["password"]
         )
         if user is not None:
             login(request, user)
+            print(user.auth_token)
             token = Token.objects.get(user=user)
             if user.is_staff:
                 role = ""
                 if user.is_collector:
                     role = "collector"
-                elif user.supervisor:
+                elif user.is_supervisor:
                     role = "supervisor"
                 else:
                     role = "admin"
@@ -126,6 +127,38 @@ def get_all_order(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+from rest_framework import permissions
+
+
+class AdminReadOnlyPermission(permissions.BasePermission):
+
+    # edit_methods = ("PUT", "PATCH")
+
+    def has_permission(self, request, view):
+        print(request.user, "ts")
+
+        if request.user.is_authenticated:
+            return True
+        # if request.user.is_admin:
+        #     return True
+
+    # def has_object_permission(self, request, view, obj):
+    #     print(request.user, "ts")
+    #     if request.user.is_superuser:
+    #         return True
+
+    #     if request.method in permissions.SAFE_METHODS:
+    #         return True
+
+    #     # if obj.author == request.user:
+    #     #     return True
+
+    #     # if request.user.is_staff and request.method not in self.edit_methods:
+    #     #     return True
+
+    #     return False
+
+
 class CollectorOrder(generics.ListAPIView):
     def get_queryset(self):
 
@@ -134,6 +167,19 @@ class CollectorOrder(generics.ListAPIView):
     # queryset = Billing.objects.all()
     serializer_class = Loanserializer
     # pagination_class = LargeResultsSetPagination
+
+
+# for admin
+class AllOrder(generics.ListAPIView):
+    permission_classes = [AdminReadOnlyPermission]
+
+    def get_queryset(self):
+        print(self.request.user.is_authenticated)
+        if not self.request.user.is_admin:
+            return []
+        return Loan.objects.all().order_by("-id")
+
+    serializer_class = Loanserializer
 
 
 @api_view(["POST"])
@@ -155,11 +201,13 @@ def addcomment(request):
 
 @api_view(["GET"])
 def payoutloan(request, id):
-    loan=Loan.objects.get(id=id)
-    loan.pay()
-    return Response(
-            {"message": "payment process"}, status=status.HTTP_201_CREATED
+    if not request.user.is_admin:
+        return Response(
+            {"message": "payment process"}, status=status.HTTP_401_UNAUTHORIZED
         )
+    loan = Loan.objects.get(id=id)
+    loan.pay()
+    return Response({"message": "payment process"}, status=status.HTTP_201_CREATED)
 
 
 # Create your views here.

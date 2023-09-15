@@ -35,11 +35,13 @@ ALLOWED_HOSTS = ['*']
 
 
 # Application definition
+API_TOKEN_AUTH = 'http://localhost:8000/api-token-auth/'
 
 INSTALLED_APPS = [
     'loanapp',
     'corsheaders',
     'rest_framework',
+    'drf_yasg',
     'rest_framework.authtoken',
     'django.contrib.admin',
     'django.contrib.auth',
