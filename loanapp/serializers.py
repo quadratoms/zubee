@@ -61,6 +61,7 @@ class LOanserializer(serializers.ModelSerializer):
             "accept_date",
             "duration",
             "status",
+            "amount_paid",
             "paid",
             "get_due_payment",
             "disburst",
@@ -83,7 +84,7 @@ class Customerserializer(serializers.ModelSerializer):
         read_only=True,
     )
     virtual_account = VirtualAccountserializer(read_only=True)
-    contact = ContactSerializer(read_only=True)
+    # contact = ContactSerializer(read_only=True)
     guarantors = Guarantorserializer(many=True, read_only=True)
 
     class Meta:
@@ -98,7 +99,7 @@ class Customerserializer(serializers.ModelSerializer):
             "state",
             "lga",
             "job",
-            # "image",
+            "image",
             "blocked",
             "loans",
             "bankdetail",
@@ -107,7 +108,7 @@ class Customerserializer(serializers.ModelSerializer):
             "comments",
             "virtual_account",
             "cards",
-            "contact",
+            # "contact",
         ]
         extra_kwargs = {
             "id": {"read_only": True},

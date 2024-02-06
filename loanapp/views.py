@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 import phonenumbers
+from loanapp.constant import FLUTTERWAVE_PUBLIC_KEY
 
 from loanapp.utils import send_message, verifypayment
 from .models import *
@@ -35,11 +36,16 @@ from django.contrib.auth import authenticate, login, logout
 
 
 def idk(i):
-    l = []
-    for each in range(i):
-        l.append(choice(string.digits))
-    n = "".join(l)
-    return n
+    """
+    Generates a string of random digits.
+
+    Args:
+        i (int): The length of the string.
+
+    Returns:
+        str: The generated string.
+    """
+    return "".join([choice(string.digits) for _ in range(i)])
 
 
 @api_view(["POST"])
@@ -59,20 +65,20 @@ def login(request):
             if res.status_code == 200:
                 return JsonResponse(res.json())
             else:
-                return JsonResponse({'error': 'Invalid credentials'}, status=400)
+                return JsonResponse({'message': 'Invalid credentials'}, status=400)
         else:
-            return JsonResponse({'error': 'Your account is not activated, please contact the administrator'}, status=400)
+            return JsonResponse({'message': 'Your account is not activated, please contact the administrator'}, status=400)
     else:
-        return JsonResponse({'error': 'Invalid credentials'}, status=400)
+        return JsonResponse({'message': 'Invalid credentials'}, status=400)
 
 @api_view(["GET"])
 def pay(request):
-    if request.user.customer.loan.get_due_payment[1] == 0:
-        print(request.user.customer.loan.get_due_payment[1])
-        return Response(
-            {"message": "your loan is not due for payment, contact admin"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+    # if request.user.customer.loan.get_due_payment[1] == 0:
+    #     print(request.user.customer.loan.get_due_payment[1])
+    #     return Response(
+    #         {"message": "your loan is not due for payment, contact admin"},
+    #         status=status.HTTP_400_BAD_REQUEST,
+    #     )
     # payment method to be apply later
     request.user.customer.loan.paid = True
     request.user.customer.loan.paid.save()
@@ -82,7 +88,7 @@ def pay(request):
 
 
 @api_view(["GET"])
-def apply(request, amount, dur=14):
+def apply(request, amount, dur=14, obj=None):
     existing = False
     try:
         if request.user.customer.loan_set.all().count() > 0:
@@ -99,7 +105,7 @@ def apply(request, amount, dur=14):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    if request.user.customer.level.quota < amount:
+    if request.user.customer.level.quota < amount and obj is None:
         # the user should be block, asking more than your quota is imposible from user interface
         return Response(
             {"message": "min amount exceeded", "status": "failed"},
@@ -114,8 +120,8 @@ def apply(request, amount, dur=14):
             return Response(
                 {"message": "Your Loan cant be process, no enough data "},
                 status=status.HTTP_403_FORBIDDEN)
-    if virtual.exists() and card.exists():
-        loan = Loan(customer=request.user.customer, amount=amount, duration=dur)
+    if virtual.exists() or card.exists():
+        loan = Loan(customer=request.user.customer, amount=amount, duration=dur, obj=(obj == None))
         loan.save()
         return Response(
             {"message": "Your Loan is processing", "status": "success"},
@@ -250,11 +256,11 @@ def get_otp(request):
     # if serializer.is_valid():
     # print(serializer.data)
     user, newuser = ZubyUser.objects.get_or_create(
-        phone=request.data["phone"],
+        phone=request.data["phone"],email=request.data.get("email")
     )
 
     otp, _ = Otp.objects.get_or_create(user=user)
-    # otp.otp = otp_code
+    otp.otp = otp_code
     otp.created = datetime.datetime.today()
     print(otp_code)
     otp.save()
@@ -269,7 +275,7 @@ def get_otp(request):
             {
                 "contacts": [phone],
                 "sender_id": "Atomus",
-                "message": "Hello Zeecash is here, your otp code is " + otp_code,
+                "message": "Hello Zeecash is here, your otp  is " + otp_code,
                 # "send_date": "14-12-2022 00:42",
                 "priority_route": False,
                 "campaign_name": "Testing",
@@ -287,7 +293,8 @@ def verify_otp(request):
     try:
         user = ZubyUser.objects.get(phone=request.data["phone"])
         otp = Otp.objects.get(otp=request.data["otp"], user=user)
-    except:
+    except Exception as inst:
+        print(inst)
         return Response(
             {"message": "otp not found"}, status=status.HTTP_400_BAD_REQUEST
         )
@@ -382,7 +389,7 @@ def verify_bvn(request):
 
     valid_bvn = False
     if bankdetail.account_no != "":
-        time.sleep(5)
+        # time.sleep(5)
         valid_bvn = bankdetail.verify()
     if valid_bvn:
         bankdetail.save()
@@ -480,6 +487,21 @@ def loandetail(request):
 
 @api_view(["GET"])
 def get_repayment_ref(request, id):
+    """
+    Retrieves the repayment reference for a given loan.
+
+    Args:
+        request (HttpRequest): The HTTP request object containing information about the request.
+        id (int): The ID of the loan for which the repayment reference is to be retrieved.
+
+    Returns:
+        Response: A JSON response containing the repayment reference.
+
+    Example Usage:
+        # Assuming there is a loan with id=1
+        response = get_repayment_ref(request, 1)
+        print(response)
+    """
     loan = Loan.objects.get(id=id)
     ref = "ZRM" + idk(17)
     # print(loan.repayment_set.all().last().amount)
@@ -494,7 +516,7 @@ def get_repayment_ref(request, id):
     print(ref)
     ref = Repayment.objects.filter(loan=loan).last().ref
     print(ref)
-    return Response({"message": ref})
+    return Response({"message": ref, "pulic_key":FLUTTERWAVE_PUBLIC_KEY})
 
 
 @api_view(["GET"])

@@ -8,6 +8,7 @@ from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
+from loanapp.constant import DAILY_INTEREST, INTIAL_INTEREST
 
 from loanapp.utils import create_virtual_account, idk, transfer_to_account
 
@@ -217,7 +218,7 @@ class Bankdetail(models.Model):
 
     def verify(self):
         print(self.customer.user.email)
-        print(">>>>>>>>>>>>>>>>>>>>>>>>>")
+        # print(">>>>>>>>>>>>>>>>>>>>>>>>>")
         data={
             "email": self.customer.user.email,
             "is_permanent": True,
@@ -275,7 +276,7 @@ class Loan(models.Model):
         "Collector", on_delete=models.CASCADE, null=True, blank=True
     )
     amount = models.IntegerField(default=0, null=True, blank=True)
-    interest_rate = models.IntegerField(default=30, null=True, blank=True)
+    interest_rate = models.IntegerField(default=INTIAL_INTEREST, null=True, blank=True)
     request_date = models.DateField(
         auto_now=False, auto_now_add=True, null=True, blank=True
     )
@@ -285,7 +286,7 @@ class Loan(models.Model):
     status = models.ForeignKey(Loanstatus, null=True, on_delete=models.PROTECT)
     paid = models.BooleanField(default=False, null=True, blank=True)
     amount_paid = models.IntegerField(default=0, null=True, blank=True)
-
+    obj=models.BooleanField(default=False, null=True, blank=True)
     last_share= models.IntegerField(default=0, null=True, blank=True)
 
     @property
@@ -306,7 +307,7 @@ class Loan(models.Model):
 
         # print(lapse)
         # assumming that one percent incrase every day after lapse day
-        return initial + (self.amount * 0.02 * lapse), lapse
+        return initial + (self.amount * DAILY_INTEREST * lapse), lapse
 
     @property
     def disburst(self) -> bool:
@@ -338,24 +339,25 @@ class Loan(models.Model):
             "amount": 100,
             "narration": "Loan disburstment to "+ self.customer.fullname,
             "reference": "zeepayout-"+idk(20),
-            "callback_url": "whotnews.buzz/paymentdata",
+            "callback_url": "zuby.buzz/paymentdata",
             "debit_currency": "NGN"
         }
         res=transfer_to_account(data)
         # if conditon payment was succssfull or failed
-        payment.successful = True
-        payment.account_number=res["data"]["account_number"]
-        payment.bank_code=res["data"]["bank_code"]
-        payment.full_name=res["data"]["full_name"]
-        payment.created_at=res["data"]["created_at"]
-        payment.amount=res["data"]["amount"]
-        payment.status=res["data"]["status"]
-        payment.reference=res["data"]["reference"]
-        payment.complete_message=res["data"]["complete_message"]
-        payment.bank_name=res["data"]["bank_name"]
-        payment.id_from_method=res["data"]["id"]
-        payment.save()
-        print(payment)
+        if res["data"]["status"]!="FAILED":
+            payment.successful = True
+            payment.account_number=res["data"]["account_number"]
+            payment.bank_code=res["data"]["bank_code"]
+            payment.full_name=res["data"]["full_name"]
+            payment.created_at=res["data"]["created_at"]
+            payment.amount=res["data"]["amount"]
+            payment.status=res["data"]["status"]
+            payment.reference=res["data"]["reference"]
+            payment.complete_message=res["data"]["complete_message"]
+            payment.bank_name=res["data"]["bank_name"]
+            payment.id_from_method=res["data"]["id"]
+            payment.save()
+            print(payment)
 
     def collate_repayment(self):
         repayments = self.repayment_set.all()
