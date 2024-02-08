@@ -1,0 +1,11 @@
+deployment:
+    stage: deploy
+    tags:
+        - dev
+
+
+  tasks:
+    - export DEPLOYPATH=/home/atomus/api/
+    - /bin/cp zubee $DEPLOYPATH
+  only:
+        - dev
