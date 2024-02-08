@@ -127,8 +127,8 @@ WSGI_APPLICATION = 'zubee.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'zubybuzz_loan_1',
-        'USER': 'zubybuzz_zuby',
+        'NAME': 'atomus_loan_1',
+        'USER': 'atomus_zuby',
         'PASSWORD': 't5m6Cwx;8]5NQG',
         'HOST':'localhost',
         'PORT':'3306',
