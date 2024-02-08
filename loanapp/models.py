@@ -137,7 +137,7 @@ class Customer(models.Model):
         return Loan.objects.filter(customer=self).last()
 
 @receiver(post_save, sender=Customer)
-def create_contact(sender, instance:Customer|None=None, created=False, **kwargs):
+def create_contact(sender, instance=None, created=False, **kwargs):
     if created:
         Contact.objects.create(customer=instance)
         Bankdetail.objects.create(customer=instance)
