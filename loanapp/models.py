@@ -339,7 +339,7 @@ class Loan(models.Model):
             "amount": 100,
             "narration": "Loan disburstment to "+ self.customer.fullname,
             "reference": "zeepayout-"+idk(20),
-            "callback_url": "zuby.buzz/paymentdata",
+            "callback_url": "api.atomus.buzz/paymentdata",
             "debit_currency": "NGN"
         }
         res=transfer_to_account(data)

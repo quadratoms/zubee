@@ -25,5 +25,5 @@ urlpatterns = [
     path('comfirmpayment/', confirm_repayment_paid),
     path('addcontact/', add_contact),
     path('imageupload/', ImageViewSet.as_view()),
-    path('paymentdata/', payment_data),
+    path('paymentdata', payment_data),
 ]

@@ -14,6 +14,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 import phonenumbers
 from loanapp.constant import FLUTTERWAVE_PUBLIC_KEY
+from loanapp.services.mailservice import send_email
 
 from loanapp.utils import send_message, verifypayment
 from .models import *
@@ -255,8 +256,14 @@ def get_otp(request):
     serializer = UserSerializer(instance=request.data)
     # if serializer.is_valid():
     # print(serializer.data)
-    user, newuser = ZubyUser.objects.get_or_create(
-        phone=request.data["phone"],email=request.data.get("email")
+    email=request.data.get("email")
+    if email:
+        user, newuser = ZubyUser.objects.get_or_create(
+        phone=request.data["phone"],email=email
+        )
+    else:
+        user, newuser = ZubyUser.objects.get_or_create(
+        phone=request.data["phone"]
     )
 
     otp, _ = Otp.objects.get_or_create(user=user)
@@ -270,7 +277,8 @@ def get_otp(request):
         phone = phonenumbers.parse("+234" + request.data["phone"])
         print(phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164))
         phone = phonenumbers.format_number(phone, phonenumbers.PhoneNumberFormat.E164)
-
+        if email:
+            send_email("ZEECASH OTP", "otp",{"otp":otp_code},[email])
         send_message(
             {
                 "contacts": [phone],
@@ -598,30 +606,33 @@ class ImageViewSet(generics.CreateAPIView):
 def payment_data(request):
     # user = request.user
     data = request.data["data"]
-    if "save" in data["tx_ref"]:
-        res = verifypayment(data["tx_ref"])
-        if res["status"] == "success":
-            email = res["data"]["customer"]["email"]
-            first_6digits = res["data"]["card"]["first_6digits"]
-            last_4digits = res["data"]["card"]["last_4digits"]
-            issuer = res["data"]["card"]["issuer"]
-            cardtype = res["data"]["card"]["type"]
-            token = res["data"]["card"]["token"]
-            expiry = res["data"]["card"]["expiry"]
-            try:
-                customer = ZubyUser.objects.get(email=email).customer
-                Card.objects.create(
-                    customer=customer,
-                    first_6digits=first_6digits,
-                    last_4digits=last_4digits,
-                    issuer=issuer,
-                    type=cardtype,
-                    token=token,
-                    expiry=expiry,
-                    data=res["data"],
-                )
-            except:
-                print("===========")
+    try:
+        if "save" in data["tx_ref"]:
+            res = verifypayment(data["tx_ref"])
+            if res["status"] == "success":
+                email = res["data"]["customer"]["email"]
+                first_6digits = res["data"]["card"]["first_6digits"]
+                last_4digits = res["data"]["card"]["last_4digits"]
+                issuer = res["data"]["card"]["issuer"]
+                cardtype = res["data"]["card"]["type"]
+                token = res["data"]["card"]["token"]
+                expiry = res["data"]["card"]["expiry"]
+                try:
+                    customer = ZubyUser.objects.get(email=email).customer
+                    Card.objects.create(
+                        customer=customer,
+                        first_6digits=first_6digits,
+                        last_4digits=last_4digits,
+                        issuer=issuer,
+                        type=cardtype,
+                        token=token,
+                        expiry=expiry,
+                        data=res["data"],
+                    )
+                except:
+                    print("===========")
+    except:
+        pass
     PaymentData.objects.create(data=request.data)
 
     return Response({"message": "ok "}, status=status.HTTP_202_ACCEPTED)

@@ -1,0 +1,67 @@
+{% autoescape off %}
+<style>
+  body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .container {
+    max-width: 600px;
+    margin: 20px auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  h1 {
+    color: #3498db;
+  }
+  
+  p {
+    color: #555;
+    line-height: 1.6;
+  }
+  
+  .button {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 3px;
+  }
+  
+  .footer {
+    margin-top: 20px;
+    text-align: center;
+    color: #888;
+  }
+</style>
+<div class="container">
+  <h1>Approval Request</h1>
+  <p>Dear {{ item.name }},</p>
+  <p>I hope this email finds you well. You requested for OTP:</p>
+  <ul>
+    <li>
+      <strong>OTP code:</strong> {{ item.otp }}
+    </li>
+    <li>
+      <strong>Description:</strong> this is code is valid for limited period of time
+    </li>
+    <!-- Add more details as needed -->
+  </ul>
+  <p>Please request for new code if expired.</p>
+  <p>Contact support if you didn't make any request.</p>
+  <p>
+  </p>
+  <div class="footer">
+    <p>
+      ZeeCash
+    </p>
+  </div>
+</div>
+
+{% endautoescape %}

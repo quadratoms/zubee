@@ -64,6 +64,8 @@ SWAGGER_SETTINGS = {
    }
 }
 
+
+APPEND_SLASH=False
 REST_FRAMEWORK = {
         'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'DEFAULT_AUTHENTICATION_CLASSES':[
@@ -130,7 +132,7 @@ DATABASES = {
         'NAME': 'atomus_loan_1',
         'USER': 'atomus_zuby',
         'PASSWORD': 't5m6Cwx;8]5NQG',
-        'HOST':'localhost',
+        'HOST':'162.55.238.94',
         'PORT':'3306',
     }
 }
