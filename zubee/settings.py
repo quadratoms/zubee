@@ -77,12 +77,13 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ]
 }
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:19006",
-    "http://localhost:3000",
-    "https://zeecash.com.ng",
-    "http://127.0.0.1:5173"
-]
+CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:19006",
+#     "http://localhost:3000",
+#     "https://zeecash.com.ng",
+#     "http://127.0.0.1:5173"
+# ]
 
 
 MIDDLEWARE = [
@@ -120,22 +121,22 @@ WSGI_APPLICATION = 'zubee.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'atomus_loan_1',
-        'USER': 'atomus_zuby',
-        'PASSWORD': 't5m6Cwx;8]5NQG',
-        'HOST':'162.55.238.94',
-        'PORT':'3306',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'atomus_loan_1',
+#         'USER': 'atomus_zuby',
+#         'PASSWORD': 't5m6Cwx;8]5NQG',
+#         'HOST':'162.55.238.94',
+#         'PORT':'3306',
+#     }
+# }
 
 # DATABASES = {
 #     'default': {

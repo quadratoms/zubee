@@ -11,4 +11,4 @@ def send_email(subject, template_name, context, recipient_list):
     text_message = strip_tags(html_message)
 
     # Send the email with both HTML and plain text versions
-    send_mail(subject, text_message, 'your-email@example.com', recipient_list, html_message=html_message, fail_silently=False)
+    send_mail(subject, text_message, 'noreply-zee@atomus.com', recipient_list, html_message=html_message, fail_silently=False)

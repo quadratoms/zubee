@@ -11,6 +11,7 @@ import numpy as np
 from loanapp.models import Collector, Loan, ZubyUser
 from loanapp.serializers import LOanserializer, Loanserializer, Commentserializer
 
+
 # @csrf_exempt
 @api_view(["POST"])
 def login_staff(request):
@@ -96,7 +97,6 @@ def share_order(request):
 
     for collector in s1:
         for loan in np.array_split(due1, len(s1))[list(s1).index(collector)]:
-
             loan.collector = collector
 
             loan.save()
@@ -131,7 +131,6 @@ from rest_framework import permissions
 
 
 class AdminReadOnlyPermission(permissions.BasePermission):
-
     # edit_methods = ("PUT", "PATCH")
 
     def has_permission(self, request, view):
@@ -161,7 +160,6 @@ class AdminReadOnlyPermission(permissions.BasePermission):
 
 class CollectorOrder(generics.ListAPIView):
     def get_queryset(self):
-
         return self.request.user.collector.loan_set.all()
 
     # queryset = Billing.objects.all()

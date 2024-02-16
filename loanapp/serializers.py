@@ -70,6 +70,7 @@ class LOanserializer(serializers.ModelSerializer):
 
 
 class ContactSerializer(serializers.ModelSerializer):
+    data=serializers.JSONField()
     class Meta:
         model = Contact
         fields = ["data"]
@@ -115,10 +116,38 @@ class Customerserializer(serializers.ModelSerializer):
             # "firstname": {"read_only": True},
             # "lastname": {"read_only": True},
         }
+        
+class CustomerWithContactSerializer(Customerserializer):
+    contact = ContactSerializer(read_only=True)
+    class Meta:
+        model = Customer
+        fields =  fields = [
+            "id",
+            "firstname",
+            "fullname",
+            "lastname",
+            "age",
+            "address",
+            "state",
+            "lga",
+            "job",
+            "image",
+            "blocked",
+            "loans",
+            "bankdetail",
+            "level",
+            "guarantors",
+            "comments",
+            "virtual_account",
+            "cards",
+            "contact",
+        ]
+        
+
 
 
 class Loanserializer(serializers.ModelSerializer):
-    customer = Customerserializer(read_only=True)
+    customer = CustomerWithContactSerializer(read_only=True)
 
     class Meta:
         model = Loan
