@@ -145,29 +145,6 @@ class CustomerWithContactSerializer(Customerserializer):
         
 
 
-
-class Loanserializer(serializers.ModelSerializer):
-    customer = CustomerWithContactSerializer(read_only=True)
-
-    class Meta:
-        model = Loan
-        fields = [
-            "id",
-            "customer",
-            "amount",
-            "interest_rate",
-            "request_date",
-            "accept",
-            "accept_date",
-            "duration",
-            "status",
-            "paid",
-            "get_due_payment",
-            "disburst",
-            "total_repayment",
-        ]
-
-
 class UserSerializer(serializers.ModelSerializer):
     customer = Customerserializer(read_only=True)
 
@@ -186,6 +163,37 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(self.validated_data["password"])
         user.save()
         Token.objects.create(user=user).save()
+class Collectorserializer(serializers.ModelSerializer):
+    user= UserSerializer()
+    class Meta:
+        model = Collector
+        fields = [field.name for field in model._meta.fields]
+        fields.append("user")
+
+
+class Loanserializer(serializers.ModelSerializer):
+    customer = CustomerWithContactSerializer(read_only=True)
+    collector = Collectorserializer()
+
+    class Meta:
+        model = Loan
+        fields = [
+            "id",
+            "customer",
+            "amount",
+            "interest_rate",
+            "request_date",
+            "accept",
+            "accept_date",
+            "duration",
+            "status",
+            "paid",
+            "get_due_payment",
+            "disburst",
+            "total_repayment",
+            "collector"
+        ]
+
 
 
 class Otpserializer(serializers.ModelSerializer):
@@ -197,10 +205,6 @@ class Otpserializer(serializers.ModelSerializer):
         otp = Otp.objects.get_or_create(phone=self.validated_data["phone"])
 
 
-class Collectorserializer(serializers.ModelSerializer):
-    class Meta:
-        models = Collector
-        fields = "__all__"
 
 
 class Imageserializer(serializers.ModelSerializer):

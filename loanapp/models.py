@@ -1,3 +1,4 @@
+import datetime
 from django.db import models
 from django.contrib.auth.models import User
 from datetime import timedelta, date
@@ -358,6 +359,27 @@ class Loan(models.Model):
             payment.id_from_method=res["data"]["id"]
             payment.save()
             print(payment)
+
+
+    def pay_manually(self, amount, reference, bank_name="N/A"):
+        payment, _= LoanPayment.objects.get_or_create(loan=self)
+
+        bank = Bankdetail.objects.get(customer=self.customer)
+        # if conditon payment was succssfull or failed
+        payment.successful = True
+        payment.account_number=bank.account_no
+        payment.bank_code=bank.bank_code
+        payment.full_name=self.customer.fullname,
+        payment.created_at=datetime.datetime.today()
+        payment.amount=amount
+        payment.status="SUCCESSFULL"
+        payment.reference= reference
+        payment.complete_message="MANUAL PAYMENT"
+        payment.bank_name=bank_name
+        payment.id_from_method="N/A"
+        payment.save()
+        print(payment)
+
 
     def collate_repayment(self):
         repayments = self.repayment_set.all()
