@@ -268,44 +268,28 @@ class Loanstatus(models.Model):
 
 
 class Loan(models.Model):
-    customer = models.ForeignKey(
-        Customer, on_delete=models.CASCADE, related_name="loans"
-    )
-    collector = models.ForeignKey(
-        "Collector", on_delete=models.CASCADE, null=True, blank=True
-    )
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="loans")
+    collector = models.ForeignKey("Collector", on_delete=models.CASCADE, null=True, blank=True)
     amount = models.IntegerField(default=0, null=True, blank=True)
     interest_rate = models.IntegerField(default=30, null=True, blank=True)
-    request_date = models.DateField(
-        auto_now=False, auto_now_add=True, null=True, blank=True
-    )
+    request_date = models.DateField(auto_now=False, auto_now_add=True, null=True, blank=True)
     accept = models.BooleanField(default=False, null=True, blank=True)
     accept_date = models.DateField(null=True, blank=True)
     duration = models.IntegerField(default=14, null=True, blank=True)
     status = models.ForeignKey(Loanstatus, null=True, on_delete=models.PROTECT)
     paid = models.BooleanField(default=False, null=True, blank=True)
     amount_paid = models.IntegerField(default=0, null=True, blank=True)
-
-    last_share= models.IntegerField(default=0, null=True, blank=True)
+    last_share = models.IntegerField(default=0, null=True, blank=True)
 
     @property
     def get_due_payment(self):
         initial = self.amount + (self.amount * self.interest_rate / 100)
-        # print("init", initial)
         lapse = 0
         if self.accept:
             lapse = (date.today() - (self.accept_date + timedelta(self.duration))).days
-        print(lapse)
-        if lapse <= 0:
-            lapse = 0
-        if self.accept:
-            if self.accept_date + timedelta(self.duration) > date.today():
-                # print(self.accept_date+timedelta(self.duration))
-                # print(date.today())
-                return initial, lapse
-
-        # print(lapse)
-        # assumming that one percent incrase every day after lapse day
+        lapse = max(lapse, 0)
+        if self.accept and self.accept_date + timedelta(self.duration) > date.today():
+            return initial, lapse
         return initial + (self.amount * 0.005 * lapse), lapse
 
     @property
@@ -314,77 +298,47 @@ class Loan(models.Model):
 
     @property
     def total_repayment(self):
-        allpayment = Repayment.objects.filter(loan=self)
-        amount = 0
-        amount = sum([amount + i.amount for i in allpayment])
-        return amount
-
-    # def get_amount_out(self) -> int:
-    #     return self.amount - (self.amount * self.interest_rate / 100)
-
-    # def due(self):
-    #     if date.today
+        return sum(repayment.amount for repayment in self.repayment_set.all())
 
     def pay(self):
-        payment, _= LoanPayment.objects.get_or_create(loan=self)
-
+        payment, _ = LoanPayment.objects.get_or_create(loan=self)
         data = {
             "account_bank": Bankdetail.objects.get(customer=self.customer).bank_code,
             "currency": "NGN",
-            # "amount": self.get_amount_out(),
             "amount": self.amount,
             "beneficiary_name": self.customer.fullname,
             "account_number": Bankdetail.objects.get(customer=self.customer).account_no,
-            "amount": 100,
-            "narration": "Loan disburstment to "+ self.customer.fullname,
-            "reference": "zeepayout-"+idk(20),
+            "narration": "Loan disbursement to " + self.customer.fullname,
+            "reference": "zeepayout-" + idk(20),
             "callback_url": "whotnews.buzz/paymentdata",
             "debit_currency": "NGN"
         }
-        res=transfer_to_account(data)
-        # if conditon payment was succssfull or failed
+        res = transfer_to_account(data)
         payment.successful = True
-        payment.account_number=res["data"]["account_number"]
-        payment.bank_code=res["data"]["bank_code"]
-        payment.full_name=res["data"]["full_name"]
-        payment.created_at=res["data"]["created_at"]
-        payment.amount=res["data"]["amount"]
-        payment.status=res["data"]["status"]
-        payment.reference=res["data"]["reference"]
-        payment.complete_message=res["data"]["complete_message"]
-        payment.bank_name=res["data"]["bank_name"]
-        payment.id_from_method=res["data"]["id"]
+        payment.account_number = res["data"]["account_number"]
+        payment.bank_code = res["data"]["bank_code"]
+        payment.full_name = res["data"]["full_name"]
+        payment.created_at = res["data"]["created_at"]
+        payment.amount = res["data"]["amount"]
+        payment.status = res["data"]["status"]
+        payment.reference = res["data"]["reference"]
+        payment.complete_message = res["data"]["complete_message"]
+        payment.bank_name = res["data"]["bank_name"]
+        payment.id_from_method = res["data"]["id"]
         payment.save()
-        print(payment)
 
     def collate_repayment(self):
-        repayments = self.repayment_set.all()
-        amount = 0
-        if repayments.count == 0:
-            print(amount)
-            return amount
-        else:
-            for repayment in repayments:
-                amount += repayment.amount
-        if amount:
-            self.amount_paid = amount
-        if amount >= self.amount:
-            self.paid = True
+        amount = sum(repayment.amount for repayment in self.repayment_set.all())
+        self.amount_paid = amount
+        self.paid = amount >= self.amount
         self.save()
-        print(amount)
         return amount
-
 
 @receiver(post_save, sender=Loan)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
-    # for loan in Loan.objects.all():
-    #     loan.accept_date= (date.today() -timedelta(randrange(7,15)))
-    #     loan.save()
-    if instance.accept_date is None:
-        if instance.accept:
-            instance.accept_date= (date.today() -timedelta(randrange(8)))
-            instance.save()
-        # all user will have token
+    if instance.accept and instance.accept_date is None:
+        instance.accept_date = date.today() - timedelta(randrange(8))
+        instance.save()
 
 
 class Loanhistory(models.Model):
