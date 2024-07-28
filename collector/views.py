@@ -48,74 +48,42 @@ def login_staff(request):
     return Response({"message": "you do not own an account or forgetten password"})
 
 
-def list_split(listA, n):
-    for x in range(0, len(listA), n):
-        every_chunk = listA[x : n + x]
-
-        if len(every_chunk) < n:
-            every_chunk = every_chunk + [None for y in range(n - len(every_chunk))]
-        yield every_chunk
-
-
 @api_view(["GET"])
 def share_order(request):
-    loans = Loan.objects.filter(paid=False)  # .order_by("amount")
-    print(loans)
+    loans = Loan.objects.filter(paid=False)
     collectors = Collector.objects.filter(active=True)
 
-    due1 = []
-    due2 = []
-    due3 = []
-    due4 = []
+    due1, due2, due3, due4 = [], [], [], []
     s1 = collectors.filter(rep="s1")
     s2 = collectors.filter(rep="s2")
     s3 = collectors.filter(rep="s3")
     s4 = collectors.filter(rep="s4")
-    print(s1)
-    print(due1)
-    print(loans)
-    # sorting loan
+
     for loan in loans:
-        print(loan.get_due_payment)
-        if loan.get_due_payment[1] == 1:
-            if loan.last_share != 1:
-                due1.append(loan)
-        elif loan.get_due_payment[1] == 8:
-            if loan.last_share != 8:
-                due2.append(loan)
-        elif loan.get_due_payment[1] == 15:
-            if loan.last_share != 15:
-                due3.append(loan)
+        due_days = loan.get_due_payment[1]
+        if due_days == 1 and loan.last_share != 1:
+            due1.append(loan)
+        elif due_days == 8 and loan.last_share != 8:
+            due2.append(loan)
+        elif due_days == 15 and loan.last_share != 15:
+            due3.append(loan)
         else:
             due4.append(loan)
-    print("++++++++++++++++++++++++++++++++++++++++++")
 
-    print(due1)
-    print(due2)
-
-    for collector in s1:
-        for loan in np.array_split(due1, len(s1))[list(s1).index(collector)]:
-
-            loan.collector = collector
-
-            loan.save()
-
-    for collector in s2:
-        for loan in np.array_split(due2, len(collector))[s2[collector]]:
-            loan.collector = collector
-            loan.save()
-
-    for collector in s3:
-        for loan in np.array_split(due3, len(collector))[s3[collector]]:
-            loan.collector = collector
-            loan.save()
-    # for collector in s4:
-    #     for loan in np.array_split(due4,len(collector))[s4[collector]]:
-    #         loan.collector=collector
-    #         loan.save()
+    distribute_loans(due1, s1, 1)
+    distribute_loans(due2, s2, 8)
+    distribute_loans(due3, s3, 15)
+    distribute_loans(due4, s4, 30)  # Assuming 30 days for s4, you can change this if needed
 
     return Response({"message": "share complete"})
 
+def distribute_loans(due_list, collector_list, last_share_value):
+    if collector_list.exists():
+        collector_count = collector_list.count()
+        for idx, loan in enumerate(due_list):
+            loan.collector = collector_list[idx % collector_count]
+            loan.last_share = last_share_value
+            loan.save()
 
 @api_view(["GET"])
 def get_all_order(request):
